@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -85,7 +86,7 @@ func TestConcurrency(t *testing.T) {
 	// Ensure that flushBatches can sleep on the lock
 	time.Sleep(2 * time.Second)
 	var wg sync.WaitGroup
-	var hit = false
+	var hit int32
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
@@ -93,12 +94,12 @@ func TestConcurrency(t *testing.T) {
 			data := bytes.Repeat([]byte{'a'}, 50)
 			if err := b.WriteEvent(data); err != nil {
 				fmt.Println("hit error")
-				hit = true
+				atomic.AddInt32(&hit, 1)
 			}
 		}()
 	}
 	wg.Wait()
-	if hit {
+	if hit > 0 {
 		t.Fail()
 	}
 }
